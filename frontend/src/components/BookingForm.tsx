@@ -1,7 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import type { Room } from "../types";
 import type { ApiError } from "../types";
 import { bookingsApi } from "../api/bookings";
+import { roomsApi } from "../api/rooms";
 import { FeedbackBanner } from "./FeedbackBanner";
 
 interface Props {
@@ -28,11 +29,45 @@ type FeedbackState =
   | { type: "error"; message: string }
   | null;
 
+type AvailabilityStatus = "idle" | "checking" | "available" | "conflict";
+
 export function BookingForm({ selectedRoom, userId, onBookingCreated }: Props) {
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
+  const [availability, setAvailability] = useState<AvailabilityStatus>("idle");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!selectedRoom || !form.date || !form.start_time || !form.end_time) {
+      setAvailability("idle");
+      return;
+    }
+    const start = new Date(`${form.date}T${form.start_time}`);
+    const end = new Date(`${form.date}T${form.end_time}`);
+    if (end <= start || start <= new Date()) {
+      setAvailability("idle");
+      return;
+    }
+    setAvailability("checking");
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await roomsApi.checkAvailability(
+          selectedRoom.id,
+          toISOUTC(form.date, form.start_time),
+          toISOUTC(form.date, form.end_time),
+        );
+        setAvailability(res.data.is_available ? "available" : "conflict");
+      } catch {
+        setAvailability("idle");
+      }
+    }, 500);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [selectedRoom, form.date, form.start_time, form.end_time]);
 
   const validate = useCallback((): boolean => {
     const errs: Partial<FormState> = {};
@@ -67,6 +102,7 @@ export function BookingForm({ selectedRoom, userId, onBookingCreated }: Props) {
         end_time: toISOUTC(form.date, form.end_time),
       });
       setForm(INITIAL_FORM);
+      setAvailability("idle");
       setFeedback({ type: "success" });
       onBookingCreated();
     } catch (err) {
@@ -212,14 +248,59 @@ export function BookingForm({ selectedRoom, userId, onBookingCreated }: Props) {
         </div>
       </div>
 
-      <p className="text-xs text-slate-400">
-        End time must be later than start time. Availability is confirmed on
-        submission.
-      </p>
+      {/* Real-time availability badge */}
+      {availability === "checking" && (
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <svg
+            className="animate-spin h-3.5 w-3.5 text-blue-500"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v8z"
+            />
+          </svg>
+          Checking availability…
+        </div>
+      )}
+      {availability === "available" && (
+        <div className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-xs font-medium text-green-700">
+          <span className="h-2 w-2 rounded-full bg-green-500" />
+          This room is available for the selected time slot.
+        </div>
+      )}
+      {availability === "conflict" && (
+        <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
+          <span className="h-2 w-2 rounded-full bg-amber-500" />
+          This room is already booked. Please choose a different time slot.
+        </div>
+      )}
+      {availability === "idle" && (
+        <p className="text-xs text-slate-400">
+          End time must be later than start time.
+        </p>
+      )}
 
       <button
         type="submit"
-        disabled={!selectedRoom || loading || userId === 0}
+        disabled={
+          !selectedRoom ||
+          loading ||
+          userId === 0 ||
+          availability === "conflict" ||
+          availability === "checking"
+        }
         className="w-full h-11 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {loading ? "Creating..." : "Create Booking"}
