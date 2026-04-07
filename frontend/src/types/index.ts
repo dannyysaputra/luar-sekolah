@@ -1,3 +1,8 @@
+export interface DemoUser {
+    id: number;
+    username: string;
+}
+
 export interface Room {
     id: number;
     name: string;

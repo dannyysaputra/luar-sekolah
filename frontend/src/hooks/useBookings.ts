@@ -22,7 +22,13 @@ export function useBookings(options: Options = {}) {
         setLoading(true);
         setError(null);
         try {
-            const res = await bookingsApi.list({ ...options, page: targetPage, page_size: PAGE_SIZE });
+            const res = await bookingsApi.list({
+                user: options.userId,
+                date: options.date,
+                status: options.status,
+                page: targetPage,
+                page_size: PAGE_SIZE,
+            });
             const data = res.data as { items: Booking[]; pagination: Pagination };
             setBookings(data.items);
             setPagination(data.pagination);

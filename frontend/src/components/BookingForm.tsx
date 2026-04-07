@@ -219,7 +219,7 @@ export function BookingForm({ selectedRoom, userId, onBookingCreated }: Props) {
 
       <button
         type="submit"
-        disabled={!selectedRoom || loading}
+        disabled={!selectedRoom || loading || userId === 0}
         className="w-full h-11 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {loading ? "Creating..." : "Create Booking"}

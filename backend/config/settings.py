@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "apps.rooms",
     "apps.bookings",
+    "apps.users",
 ]
 
 MIDDLEWARE = [

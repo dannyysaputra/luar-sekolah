@@ -11,14 +11,23 @@ import { FeedbackBanner } from "./components/FeedbackBanner";
 import { Paginator } from "./components/Paginator";
 import { useRooms } from "./hooks/useRooms";
 import { useBookings } from "./hooks/useBookings";
-import type { Room } from "./types";
-
-// For this demo, user is fixed to ID 1 (alice). In production this comes from auth.
-const DEMO_USER_ID = 1;
+import { useUsers } from "./hooks/useUsers";
+import type { Room, DemoUser } from "./types";
 
 export default function App() {
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [filterDate, setFilterDate] = useState("");
+  const [activeUser, setActiveUser] = useState<DemoUser | null>(null);
+
+  const { users } = useUsers();
+
+  // Once users load, default to the first one
+  const effectiveUser = activeUser ?? users[0] ?? null;
+
+  const handleUserChange = (user: DemoUser) => {
+    setActiveUser(user);
+    setFilterDate("");
+  };
 
   const {
     rooms,
@@ -37,11 +46,15 @@ export default function App() {
     pagination: bookingsPagination,
     goToPage: goToBookingPage,
     refetch: refetchBookings,
-  } = useBookings({ userId: DEMO_USER_ID, date: filterDate || undefined });
+  } = useBookings({ userId: effectiveUser?.id, date: filterDate || undefined });
 
   return (
     <PageShell>
-      <PageHeader />
+      <PageHeader
+        activeUser={effectiveUser}
+        users={users}
+        onUserChange={handleUserChange}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left – Room list */}
@@ -88,7 +101,7 @@ export default function App() {
           >
             <BookingForm
               selectedRoom={selectedRoom}
-              userId={DEMO_USER_ID}
+              userId={effectiveUser?.id ?? 0}
               onBookingCreated={refetchBookings}
             />
           </SectionCard>

@@ -13,6 +13,19 @@
   ],
   "item": [
     {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/users/",
+            "description": "Returns all users (id + username). Used by the frontend user switcher."
+          }
+        }
+      ]
+    },
+    {
       "name": "Rooms",
       "item": [
         {
