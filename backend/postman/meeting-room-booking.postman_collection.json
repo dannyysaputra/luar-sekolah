@@ -1,0 +1,134 @@
+{
+  "info": {
+    "name": "Meeting Room Booking System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "meeting-room-booking-v1"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Rooms",
+      "item": [
+        {
+          "name": "List Rooms",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/rooms/",
+            "description": "Returns all rooms."
+          }
+        },
+        {
+          "name": "Create Room",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/rooms/",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ocean Room\",\n  \"capacity\": 12,\n  \"location\": \"Floor 3\",\n  \"description\": \"Main discussion room\"\n}"
+            },
+            "description": "Creates a new room."
+          }
+        },
+        {
+          "name": "Check Room Availability",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/rooms/1/availability/?start_time=2026-04-07T09:00:00Z&end_time=2026-04-07T10:00:00Z",
+              "host": ["{{base_url}}"],
+              "path": ["rooms", "1", "availability", ""],
+              "query": [
+                { "key": "start_time", "value": "2026-04-07T09:00:00Z" },
+                { "key": "end_time", "value": "2026-04-07T10:00:00Z" }
+              ]
+            },
+            "description": "Checks if a room is available for a given time range."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "List Bookings",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/bookings/",
+            "description": "Returns all bookings."
+          }
+        },
+        {
+          "name": "List Bookings by User",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/bookings/?user=1",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", ""],
+              "query": [{ "key": "user", "value": "1" }]
+            },
+            "description": "Returns bookings for a specific user."
+          }
+        },
+        {
+          "name": "List Bookings by Date",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/bookings/?user=1&date=2026-04-07",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", ""],
+              "query": [
+                { "key": "user", "value": "1" },
+                { "key": "date", "value": "2026-04-07" }
+              ]
+            },
+            "description": "Returns bookings filtered by date."
+          }
+        },
+        {
+          "name": "Create Booking",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/bookings/",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 1,\n  \"room_id\": 1,\n  \"start_time\": \"2026-04-07T09:00:00Z\",\n  \"end_time\": \"2026-04-07T10:00:00Z\"\n}"
+            },
+            "description": "Creates a new booking. Returns 409 on conflict."
+          }
+        },
+        {
+          "name": "Create Booking – Conflict",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/bookings/",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 2,\n  \"room_id\": 1,\n  \"start_time\": \"2026-04-07T09:30:00Z\",\n  \"end_time\": \"2026-04-07T10:30:00Z\"\n}"
+            },
+            "description": "Intentionally triggers a 409 conflict with the previous booking."
+          }
+        },
+        {
+          "name": "Cancel Booking",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/bookings/1/",
+            "description": "Cancels a booking by setting status to 'cancelled'."
+          }
+        }
+      ]
+    }
+  ]
+}
